@@ -72,7 +72,7 @@ graph TB
     AWSServices -->|Error| Drishti
     
     Drishti -->|Vernacular Explanation| User
-    Orchestrator -->|Response| User
+    Orchestrator -->|Vernacular Response| User
 ```
 
 ### Component Interaction Flow
@@ -84,9 +84,9 @@ graph TB
 4. Orchestrator synthesizes cultural analogy + technical explanation
 5. Response returned in user's vernacular language
 
-**Command Execution Flow (Vani-Srijan)**:
-1. User speaks command → Pulse-Batch → Transcribe → Orchestrator
-2. Orchestrator interprets intent and generates AWS CLI command
+**Command Generation and Execution Flow (Vani-Srijan)**:
+1. User expresses logic and reasoning in Indian language → Pulse-Batch → Transcribe → Orchestrator
+2. Orchestrator interprets intent and generates code/ command
 3. Command sent to Karma-Kavach for safety validation
 4. If safe: SSM executes command → Result returned in vernacular
 5. If unsafe: Warning displayed, override confirmation required
