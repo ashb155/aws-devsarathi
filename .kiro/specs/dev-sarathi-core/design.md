@@ -2,7 +2,7 @@
 
 ## Overview
 
-Dev-Sarathi Core is a vernacular AI co-pilot system that enables Indian developers to interact with AWS services using their native languages. The system integrates multiple AWS services (Transcribe, Bedrock, S3, SSM, Guardrails) to provide a seamless voice-to-action pipeline with built-in safety mechanisms and pedagogical error explanations.
+Dev-Sarathi Core is a vernacular AI co-pilot system that enables Indian developers to code, interact and build with AWS services using their native languages. The system integrates multiple AWS services (Transcribe, Bedrock, S3, SSM, Guardrails) to provide a seamless voice-to-action pipeline with built-in safety mechanisms and pedagogical error explanations.
 
 The architecture follows a modular pipeline design:
 1. **Input Layer** (Vani-Srijan): Captures voice/text input and transcribes to text
