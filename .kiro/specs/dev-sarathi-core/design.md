@@ -63,8 +63,8 @@ graph TB
     
     Orchestrator <-->|Query/Context| RAG
     Orchestrator -->|Intent| Guardrails
-    Guardrails -->|Validated Intent| Orchestrator
-    Guardrails -->|Blocked Intent| User
+    Guardrails -->|Validated/Blocked Intent| Orchestrator
+  
     
     Orchestrator -->|AWS CLI Command| SSM
     SSM -->|Execute| AWSServices
