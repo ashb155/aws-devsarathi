@@ -73,6 +73,7 @@ graph TB
     
     Drishti -->|Vernacular Explanation| User
     Orchestrator -->|Vernacular Response| User
+    Orchestrator -->|Generated Code Snippet| User
 ```
 
 ### Component Interaction Flow
@@ -202,7 +203,7 @@ interface BedrockOrchestrator {
   // Process user input and determine intent
   processInput(input: UserInput): Promise<Intent>
   
-  // Generate AWS CLI command from intent
+  // Generate code  command from intent
   generateCommand(intent: Intent): Promise<AWSCommand>
   
   // Query knowledge base for learning requests
