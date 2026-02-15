@@ -4,6 +4,14 @@
 
 Dev-Sarathi is an Indic-language compatible AI co-pilot designed to democratize and simplify the entire software lifecycle—Build, Ship, and Deploy—for India's developers. By dismantling linguistic barriers, it allows users to interact, design logic and fix issues in their native Indian tongues and confidently build and deploy their ideas. It encompasses the transition from Vernacular Learning (Gyan-Setu) to Voice-based Code Generation (Vani-Srijan), Diagnostic Debugging and Analysis (Dosh-Drishti), and Operational Safety (Karma-Kavach).
 
+## Assumptions and Dependencies
+- **User Environment**: The user has VS Code (v1.85+) installed on a machine with a working microphone and active internet connection (min 2 Mbps).
+
+- **AWS Access**: The system has valid IAM access to Amazon Bedrock (Claude 3.5 Sonnet) and Amazon Transcribe.
+
+- **Language Support**: The user speaks one of the supported Indic languages with reasonable clarity; extreme dialect variations may impact accuracy.
+
+
 ## Glossary
 
 - **Dev-Sarathi**: The laptop-first vernacular AI extension (VS Code/CLI)
@@ -53,7 +61,7 @@ Dev-Sarathi is an Indic-language compatible AI co-pilot designed to democratize 
 
 2. WHEN code is generated, THE System SHALL execute it within an isolated, secure sandbox environment (e.g., ephemeral Docker container or secure runtime) to prevent host system compromise.
 
-3. THE System SHALL complete the full voice-to-result processing loop (Speech-to-Text → Code Generation → Execution) within 3000ms for standard logic queries.
+3. THE System SHALL complete the full voice-to-result processing loop (Speech-to-Text → Code Generation → Execution) within 5000ms for standard logic queries.
 
 4.  WHEN code execution succeeds, THE System SHALL summarize the output and return a confirmation message in the user's vernacular language.
 
@@ -146,6 +154,16 @@ Submit these micro-batches to Amazon Transcribe (Batch API) immediately upon buf
 5. THE System SHALL display citations as clickable links when rendered in VS Code
 
 
+### Requirement 9 : UI/UX
+**User Story**: As a developer, I want a non-intrusive interface that blends into my IDE, so I don't lose focus on my code.
+
+### Acceptance Criteria
+
+1. THE System SHALL reside primarily in the VS Code Sidebar Panel.
+2. THE System SHALL provide a "floating microphone" widget or keyboard shortcut (Ctrl+Shift+V) to toggle voice listening.
+3. WHEN the system is processing (Transcribing or Thinking), THE System SHALL display a visual loading indicator (e.g., a pulsing waveform).
+4. THE System SHALL support a "Dark Mode" theme consistent with the user's VS Code settings.
+
 
 
 
@@ -223,13 +241,18 @@ The VS Code extension sidebar must render the vernacular response within 100ms o
     - RAG Learner Systems (Gyan Setu)
     - Ops Safety and Automation (Karma Kavach)
 
+### Out-of-Scope
+    - Offline Mode
+    - Image Input
+    - Model-Fine Tuning
+
 
 
 ## Success Metrics
-    - Code generation accuracy and acceptance
-    - Minimal end-to-end latency
-    - Indian language coverage and transcription accuracy
+    - Code generation accuracy and acceptance > 70%
+    - Minimal end-to-end latency under 5 s for 90% requests
+    - Indian language coverage and transcription accuracy >85% Word Error Rate
     - Effective debugging efficiency
     - Learning comprehension improvement
-    - User feedback related to confidence in building and deploying
+    - Reduce time to deploy by 30% (User Survey)
 
