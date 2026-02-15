@@ -5,75 +5,95 @@
 Dev-Sarathi Core is a vernacular AI co-pilot system that enables Indian developers to code, interact and build with AWS services using their native languages. The system integrates multiple AWS services (Transcribe, Bedrock, S3, SSM, Guardrails) to provide a seamless voice-to-action pipeline with built-in safety mechanisms and pedagogical error explanations.
 
 The architecture follows a modular pipeline design:
-1. **Input Layer** (Vani-Srijan): Captures voice/text input and transcribes to text
-2. **Reasoning Layer** (Bedrock-Orchestrator): Interprets intent and generates commands
+1. **Input Layer** : Captures voice/text input and transcribes to text
+2. **Reasoning and Generation Layer** (Vani-Srijan): Interprets vernacular intent and generates code snippets or commands
 3. **Knowledge Layer** (Gyan-Setu-RAG): Provides contextual learning and documentation
-4. **Safety Layer** (Karma-Kavach): Validates commands before execution
-5. **Execution Layer** (AWS-SSM): Executes validated commands securely
+4. **Safety Layer and Automation** (Karma-Kavach): Validates commands before execution, and automates testing, docs and version control.
+5. **Execution Layer** (AWS-SSM): Executes validated commands securely.
 6. **Diagnostic Layer** (Dosh-Drishti): Analyzes and explains errors in vernacular
 
 ## Architecture
 
 ### High-Level Architecture
 
-```mermaid
 graph TB
+    %% User Input
     User[User: Voice/Text Input]
-    
-    subgraph "Input Layer"
+
+    %% Input Layer
+    subgraph Input_Layer["Input Layer"]
         VSCode[VS Code Extension]
         CLI[Terminal CLI]
         PulseBatch[Pulse-Batch Streamer]
         Transcribe[Amazon Transcribe]
     end
-    
-    subgraph "Reasoning Layer"
+
+    %% Reasoning Layer
+    subgraph Reasoning_Layer["Reasoning Layer"]
         Orchestrator[Bedrock-Orchestrator<br/>Claude 3.5 Sonnet]
     end
-    
-    subgraph "Knowledge Layer"
+
+    %% Knowledge Layer
+    subgraph Knowledge_Layer["Knowledge Layer"]
         RAG[Gyan-Setu-RAG<br/>S3 + Bedrock KB]
     end
-    
-    subgraph "Safety Layer"
+
+    %% Safety Layer
+    subgraph Safety_Layer["Safety Layer"]
         Guardrails[Karma-Kavach<br/>Bedrock Guardrails]
     end
-    
-    subgraph "Execution Layer"
-        SSM[AWS Systems Manager]
-        AWSServices[AWS Services<br/>S3, EC2, Lambda, etc.]
+
+    %% Execution Layer
+    subgraph Execution_Layer["Execution Layer (Hybrid)"]
+        Router{Router}
+        LocalExec[Local Terminal Executor<br/>VS Code API]
+        SSM[Remote Executor<br/>AWS Systems Manager]
+        AWSServices[AWS Cloud Resources]
     end
-    
-    subgraph "Diagnostic Layer"
+
+    %% Diagnostic Layer
+    subgraph Diagnostic_Layer["Diagnostic Layer"]
         Drishti[Dosh-Drishti<br/>Bedrock Agent]
     end
-    
+
+    %% Input Flow
     User -->|Voice| VSCode
     User -->|Voice| CLI
     User -->|Text| VSCode
     User -->|Text| CLI
-    
+
     VSCode -->|Audio Stream| PulseBatch
     CLI -->|Audio Stream| PulseBatch
     PulseBatch -->|200ms Chunks| Transcribe
     Transcribe -->|Vernacular Text| Orchestrator
-    
+
     VSCode -->|Text| Orchestrator
     CLI -->|Text| Orchestrator
-    
+
+    %% Reasoning & Knowledge
     Orchestrator <-->|Query/Context| RAG
+
+    %% Safety & Routing
     Orchestrator -->|Intent| Guardrails
-    Guardrails -->|Validated/Blocked Intent| Orchestrator
-  
-    
-    Orchestrator -->|AWS CLI Command| SSM
+    Guardrails -->|Blocked Intent| Orchestrator
+    Guardrails -->|Validated Intent| Router
+
+    Router -->|Local Task (Git/Docs)| LocalExec
+    Router -->|Cloud Task (Deploy)| SSM
+
+    %% Execution & Feedback
     SSM -->|Execute| AWSServices
     AWSServices -->|Success| Orchestrator
     AWSServices -->|Error| Drishti
-    
+
+    LocalExec -->|Success| Orchestrator
+    LocalExec -->|Error| Drishti
+
+    %% Final Output
     Drishti -->|Vernacular Explanation| User
     Orchestrator -->|Vernacular Response| User
     Orchestrator -->|Generated Code Snippet| User
+
 ```
 
 ### Component Interaction Flow
@@ -85,19 +105,22 @@ graph TB
 4. Orchestrator synthesizes cultural analogy + technical explanation
 5. Response returned in user's vernacular language
 
-**Command Generation and Execution Flow (Vani-Srijan)**:
-1. User expresses logic and reasoning in Indian language → Pulse-Batch → Transcribe → Orchestrator
-2. Orchestrator interprets intent and generates code/ command
-3. Command sent to Karma-Kavach for safety validation
-4. If safe: SSM executes command → Result returned in vernacular
+**Command Generation and Execution Flow (Vani-Srijan + Karma-Kavach)**:
+1. User expresses logic and reasoning in Indian language(eg. "Git commit kardo","for loop mein even numbers hatado") → Pulse-Batch → Transcribe → Orchestrator
+2. Orchestrator interprets intent and generates code/ command. Code snippet sent back to user
+3. If command, sent to Karma-Kavach for safety validation
+4. Karma-Kavach router directs execution:
+  Local: Executed via VS Code Terminal (e.g., "Git commit", "Run tests", "Add docs").
+  Remote: Executed via AWS SSM (e.g., "Launch EC2", "Create Bucket").
+4. If safe: Command executed → Result returned in vernacular
 5. If unsafe: Warning displayed, override confirmation required
 
 **Error Handling Flow (Dosh-Drishti)**:
-1. SSM execution fails with non-zero exit code
+1. Code or command execution (local or remote) fails with a non-zero exit code
 2. Error intercepted and routed to Dosh-Drishti
 3. Dosh-Drishti analyzes stack trace using Bedrock Agent
 4. Pedagogical explanation generated in vernacular
-5. Suggested fix provided to user
+5. If applicable, Dosh-Drishti can suggest updated code snippets or safer command alternatives
 
 ## Components and Interfaces
 
@@ -117,17 +140,35 @@ interface PulseBatchStreamer {
   
   // Configure chunk size (default 200ms)
   setChunkSize(milliseconds: number): void
+
+   // Voice Activity Detection options
+  setVADOptions(options: VADOptions): void
+  
+  // Max micro-batch duration (ms)
+  setBufferDuration(milliseconds: number): void
+
+  // Routing based on language
+  routeAudio(language?: VernacularLanguage): 'streaming' | 'pulse-batch'
+}
+
+interface VADOptions {
+  sensitivity: 'low' | 'medium' | 'high'   // How aggressively to detect silence
+  minSilenceDurationMs: number             // Min silence to split batch
+  maxBatchDurationMs: number               // Force batch split if too long
 }
 
 interface AudioSource {
-  deviceId: string
-  sampleRate: number
-  channels: number
+  deviceId: string     // Unique ID of the microphone
+  sampleRate: number   // Audio sample rate in Hz
+  channels: number     // Number of audio channels
 }
 
 interface StreamHandle {
   id: string
-  status: 'active' | 'paused' | 'stopped'
+  status: 'active' | 'paused' | 'stopped'   // Current stream status
+  startTime?: number   // Track when streaming started
+  endTime?: number     // Track when streaming finished
+  latency?: number     // Calculate voice-to-text processing latency
 }
 ```
 
@@ -155,14 +196,29 @@ interface DevSarathiExtension {
   displayResponse(response: Response): void
 }
 
-type VernacularLanguage = 'hindi' | 'kannada' | 'hinglish' | 'kanglish'
+
+interface VernacularLanguageInfo {
+  code: string         // e.g., 'hi', 'kn', 'ta', 'te'
+  name: string         // e.g., 'Hindi', 'Kannada'
+  type?: 'official' | 'slang' | 'mixed'
+}
+type VernacularLanguage = VernacularLanguageInfo  //example indian languages and mixed slang
 
 interface Response {
   content: string
   language: VernacularLanguage
   citations?: Citation[]
   codeSnippets?: CodeSnippet[]
+  format?: ResponseFormat
 }
+
+interface ResponseFormat {
+  numberedSteps?: boolean
+  codeSyntaxHighlight?: string   // Any language or format (e.g., 'go', 'rust', 'html', 'yaml')
+  separateAnalogy?: boolean
+  clickableCitations?: boolean
+}
+
 ```
 
 #### Terminal CLI Interface
@@ -211,6 +267,15 @@ interface BedrockOrchestrator {
   
   // Synthesize response in vernacular
   synthesizeResponse(data: any, language: VernacularLanguage): Promise<string>
+
+  // Detect language automatically if not specified
+  detectLanguage(input: string): VernacularLanguage
+
+  // Track current session language for multi-language support
+  setSessionLanguage(sessionId: string, language: VernacularLanguage): void
+
+  validateIntent(intent: Intent): Promise<SafetyEvaluation>
+
 }
 
 interface UserInput {
@@ -220,17 +285,20 @@ interface UserInput {
 }
 
 interface Intent {
-  type: 'learning' | 'command' | 'diagnostic'
-  action?: AWSAction
-  parameters?: Record<string, any>
-  isDestructive: boolean
+  type: 'learning' | 'code' | 'command'| 'diagnostic'    // Intent type guides Orchestrator on next action
+  action?: AWSAction                                     // Optional AWS-specific action for command intents
+  parameters?: Record<string, any>                       // Any additional parameters needed for execution
+  isDestructive: boolean,                                // True if action could modify/destroy resources
+  targetLayer?: 'local' | 'cloud' | 'learning'           // Determines execution context
 }
 
 interface AWSCommand {
-  service: string
-  operation: string
-  parameters: Record<string, any>
-  cliString: string
+  service: string                                       // AWS service name (e.g., S3, EC2)
+  operation: string                                     // Action to perform (e.g., 'CreateBucket')
+  parameters: Record<string, any>                       // Parameters required for the action
+  cliString: string                                     // CLI equivalent command string, useful for logging and direct execution
+  generatedAt?: Date
+  processedAt?: Date
 }
 ```
 
@@ -253,10 +321,11 @@ interface GyanSetuRAG {
 }
 
 interface KnowledgeResponse {
-  answer: string
-  analogy?: Analogy
-  citations: Citation[]
-  relatedTopics: string[]
+  answer: string                                         // Main answer text
+  analogy?: Analogy                                      // Optional cultural analogy to explain concept
+  citations: Citation[]                                  // References for documentation and credibility
+  relatedTopics: string[]                                // Topics related to the query for further learning
+  clickableCitations?: boolean
 }
 
 interface Analogy {
@@ -292,11 +361,11 @@ interface KarmaKavach {
 }
 
 interface SafetyEvaluation {
-  safe: boolean
-  reason?: string
-  severity: 'low' | 'medium' | 'high' | 'critical'
-  requiresOverride: boolean
-  warningMessage?: string
+  safe: boolean                                     // True if intent/command passes safety checks
+  reason?: string                                   // Why it was marked unsafe (if applicable)
+  severity: 'low' | 'medium' | 'high' | 'critical'  // Severity of potential risk
+  requiresOverride: boolean                         // True if user confirmation needed to proceed
+  warningMessage?: string                           // Message to show user when override is needed
 }
 ```
 
@@ -331,11 +400,12 @@ interface ExecutionTarget {
 }
 
 interface ExecutionResult {
-  success: boolean
-  output: string
-  exitCode: number
-  executionId: string
-  duration: number
+  success: boolean           // True if execution completed successfully
+  output: string             // Standard output from command or script
+  exitCode: number           // Return code of execution, 0 = success
+  executionId: string        // Unique ID to track execution
+  duration: number           // Time taken to complete command in milliseconds
+  responseLanguage?: VernacularLanguage
 }
 
 interface ExecutionStatus {
@@ -364,11 +434,12 @@ interface DoshDrishti {
 }
 
 interface ExecutionError {
-  code: string
+  code: string               // Can be compiler/interpreter code
   message: string
-  stackTrace: string
-  command: AWSCommand
-  exitCode: number
+  stackTrace?: string        // Optional for simpler scripts
+  command?: AWSCommand       // Optional for cloud tasks
+  codeSnippet?: string       // Optional for local code
+  exitCode?: number          // Optional for local executions
 }
 
 interface ErrorExplanation {
@@ -376,6 +447,7 @@ interface ErrorExplanation {
   detailedExplanation: string
   rootCause: string
   language: VernacularLanguage
+  clickableCitations?: boolean
 }
 
 interface Fix {
@@ -391,23 +463,28 @@ interface Fix {
 ### User Session
 ```typescript
 interface UserSession {
-  sessionId: string
-  userId: string
-  preferredLanguage: VernacularLanguage
-  conversationHistory: Message[]
-  awsCredentials: AWSCredentials
-  createdAt: Date
-  lastActivity: Date
+  sessionId: string                                     // Unique session ID for tracking
+  userId: string                                        // User identifier
+  sessionLanguages?: Record<string, VernacularLanguage>
+  preferredLanguage: VernacularLanguage                 // Language preference for responses
+  conversationHistory: Message[]                        // Log of messages in session
+  awsCredentials: AWSCredentials                        // AWS access info for commands
+  createdAt: Date                                       // Timestamp when session started
+  lastActivity: Date                                    // Last activity timestamp
+  lastIntentLatencyMs?: number
+  overrides?: Record<string, boolean>                   // intentId → override confirmed
 }
 
 interface Message {
   id: string
-  role: 'user' | 'assistant'
+  role: 'user' | 'assistant'             // Who sent the message
   content: string
   language: VernacularLanguage
   timestamp: Date
-  intent?: Intent
-  command?: AWSCommand
+  intent?: Intent                        // Optional, intent detected for this message
+  command?: AWSCommand                   // Optional, command generated
+  generatedCode?: string                 // Optional, code snippet generated
+  diagnosticFeedback?: string            // Optional, error analysis feedback
 }
 ```
 
@@ -458,11 +535,16 @@ interface KnowledgeEntry {
 interface ExecutionLog {
   id: string
   sessionId: string
-  command: AWSCommand
+  command?: AWSCommand  
+  codeSnippet?: string    
   intent: Intent
-  safetyEvaluation: SafetyEvaluation
-  executionResult: ExecutionResult
+  safetyEvaluation?: SafetyEvaluation
+  executionResult?: ExecutionResult
+  diagnosticFeedback?: string
   timestamp: Date
   userOverride?: boolean
+  executedBy?: 'local' | 'cloud' | 'manual'
+  responseLanguage?: VernacularLanguage
+  automationType?: 'git' | 'docs' | 'test' | 'deploy'
 }
 ```

@@ -12,7 +12,7 @@ Dev-Sarathi is an Indic-language compatible AI co-pilot designed to democratize 
 - **Gyan-Setu-RAG**: The S3 + Bedrock Knowledge Base retrieval system
 - **Dosh-Drishti**: The Diagnostic Agent responsible for assisting developers in debugging, analyzing errors and explaining it to them in vernacular languages
 - **Karma-Kavach**: The Bedrock Guardrails safety component to catch potentially risky executions and automate docs generation, version control and testing
-- **AWS-SSM**: The AWS Systems Manager executor component
+- **Execution-Engine**: The dual-mode execution system comprising the VS Code Terminal API (for local tasks like Git/Testing) and AWS Systems Manager (SSM) (for remote cloud operations).
 - **Pulse-Batch**: A custom latency-optimization technique for streaming Indic voice data, especially helpful for those languages without any streaming support
 - **Vernacular_Content**: Indian language text representing realistic developer communication
 - **User**: A developer interacting with Dev-Sarathi
@@ -71,9 +71,9 @@ Dev-Sarathi is an Indic-language compatible AI co-pilot designed to democratize 
 4. THE Dosh-Drishti SHALL suggest a specific fix or command to resolve the error
 5. THE System SHALL present the vernacular explanation and suggested fix to the user
 
-### Requirement 5: Operational Safety (Karma-Kavach)
+### Requirement 5: Operational Safety and Automation(Karma-Kavach)
 
-**User Story:** As a team lead, I want to prevent my junior developers from accidentally deleting production resources, so that critical data remains safe.
+**User Story:** As a team lead, I want to prevent my junior developers from accidentally deleting production resources, so that critical data remains safe, and also help them automate edious tasks like writing documentation, committing code, and running tests.
 
 #### Acceptance Criteria
 
@@ -82,6 +82,24 @@ Dev-Sarathi is an Indic-language compatible AI co-pilot designed to democratize 
 3. WHEN a destructive intent is blocked, THE System SHALL display a high-priority warning in the user's vernacular language
 4. WHEN a destructive intent is blocked, THE System SHALL require an explicit override confirmation from the user
 5. WHEN an override confirmation is received, THE System SHALL re-evaluate the intent and proceed with execution if confirmed
+
+### Acceptance Criteria - Automated Documentation
+
+1. WHEN the User requests documentation (e.g., "Add comments to this function"), THE System SHALL analyze the code currently visible in the active editor buffer.
+2. THE System SHALL generate standard documentation in English or the user's vernacular language as requested.
+3. THE System SHALL insert the generated documentation directly into the file using the VS Code Text Editor API, without overwriting existing logic.
+
+### Acceptance Criteria - Automated Version Control
+1. WHEN the User requests a commit ("Git commit karlo"), THE System SHALL analyze the git diff of the staged files.
+2. THE System SHALL generate a concise, semantic commit message summarizing the changes (e.g., "Fix: Resolved null pointer exception in login flow").
+3. THE System SHALL present the generated message to the user for confirmation in comfortable language.
+4. WHEN  confirmed, THE System SHALL execute the git commit command via the local terminal shell.
+
+### Acceptance Criteria - Automated Testing
+1. WHEN the User requests to run tests (e.g., "Ye test kardo"), THE System SHALL detect the project's test runner automatically.
+2. THE System SHALL execute the test command in the local terminal.
+3. WHEN a test fails, THE System SHALL automatically capture the error output and route it to Dosh-Drishti  for immediate analysis and fix suggestions.
+
 
 ### Requirement 6: Transcription Accuracy
 
@@ -101,9 +119,9 @@ Buffer audio into "micro-batches" based on silence detection (VAD) or a maximum 
 
 Submit these micro-batches to Amazon Transcribe (Batch API) immediately upon buffer closure.
 
-3. WHEN transcription is complete, THE System SHALL validate the transcribed text before processing
+4. WHEN transcription is complete, THE System SHALL validate the transcribed text before processing
 
-4. THE System SHALL achieve a minimum transcription accuracy of 85% for common developer commands in vernacular languages
+5. THE System SHALL achieve a minimum transcription accuracy of 85% for common developer commands in vernacular languages
 
 ### Requirement 7: Multi-Language Support
 
@@ -190,7 +208,9 @@ The VS Code extension sidebar must render the vernacular response within 100ms o
 
 **Safety Enforcement**: Amazon Bedrock Guardrails (policy checks).
 
-**Secure Execution**: AWS Systems Manager (SSM) (for shell and Git command execution).
+**Local Execution**: VS Code Terminal API (for Git, Testing, and Documentation tasks).
+
+**Remote Execution**: AWS Systems Manager (SSM) (for cloud infrastructure provisioning).
 
 
 
@@ -206,9 +226,9 @@ The VS Code extension sidebar must render the vernacular response within 100ms o
 
 
 ## Success Metrics
-    - Code generation accuracy
+    - Code generation accuracy and acceptance
     - Minimal end-to-end latency
-    - Indian language coverage
+    - Indian language coverage and transcription accuracy
     - Effective debugging efficiency
     - Learning comprehension improvement
     - User feedback related to confidence in building and deploying
