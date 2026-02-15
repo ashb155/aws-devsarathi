@@ -18,10 +18,8 @@ The architecture follows a modular pipeline design:
 
 ```mermaid
 graph TB
-    %% User Input
     User[User: Voice/Text Input]
 
-    %% Input Layer
     subgraph Input_Layer["Input Layer"]
         VSCode[VS Code Extension]
         CLI[Terminal CLI]
@@ -29,32 +27,27 @@ graph TB
         Transcribe[Amazon Transcribe]
     end
 
-    %% Reasoning Layer
-    subgraph Reasoning_Layer["Reasoning Layer"]
-        Orchestrator[Bedrock-Orchestrator<br/>Claude 3.5 Sonnet]
+    subgraph Reasoning_Layer["Reasoning and Generation Layer"]
+        Orchestrator[Bedrock-Orchestrator<br>Claude 3.5 Sonnet]
     end
 
-    %% Knowledge Layer
     subgraph Knowledge_Layer["Knowledge Layer"]
-        RAG[Gyan-Setu-RAG<br/>S3 + Bedrock KB]
+        RAG[Gyan-Setu-RAG<br>S3 + Bedrock KB]
     end
 
-    %% Safety Layer
     subgraph Safety_Layer["Safety Layer"]
-        Guardrails[Karma-Kavach<br/>Bedrock Guardrails]
+        Guardrails[Karma-Kavach<br>Bedrock Guardrails]
     end
 
-    %% Execution Layer
     subgraph Execution_Layer["Execution Layer (Hybrid)"]
         Router{Router}
-        LocalExec[Local Terminal Executor<br/>VS Code API]
-        SSM[Remote Executor<br/>AWS Systems Manager]
+        LocalExec[Local Terminal Executor<br>VS Code API]
+        SSM[Remote Executor<br>AWS Systems Manager]
         AWSServices[AWS Cloud Resources]
     end
 
-    %% Diagnostic Layer
     subgraph Diagnostic_Layer["Diagnostic Layer"]
-        Drishti[Dosh-Drishti<br/>Bedrock Agent]
+        Drishti[Dosh-Drishti<br>Bedrock Agent]
     end
 
     %% Input Flow
@@ -71,18 +64,14 @@ graph TB
     VSCode -->|Text| Orchestrator
     CLI -->|Text| Orchestrator
 
-    %% Reasoning & Knowledge
     Orchestrator <-->|Query/Context| RAG
-
-    %% Safety & Routing
     Orchestrator -->|Intent| Guardrails
     Guardrails -->|Blocked Intent| Orchestrator
     Guardrails -->|Validated Intent| Router
 
-    Router -->|Local Task (Git/Docs)| LocalExec
-    Router -->|Cloud Task (Deploy)| SSM
+    Router -->|"Local Task (Git/Docs)"| LocalExec
+    Router -->|"Cloud Task (Deploy)"| SSM
 
-    %% Execution & Feedback
     SSM -->|Execute| AWSServices
     AWSServices -->|Success| Orchestrator
     AWSServices -->|Error| Drishti
@@ -90,10 +79,10 @@ graph TB
     LocalExec -->|Success| Orchestrator
     LocalExec -->|Error| Drishti
 
-    %% Final Output
     Drishti -->|Vernacular Explanation| User
     Orchestrator -->|Vernacular Response| User
     Orchestrator -->|Generated Code Snippet| User
+
 
 ```
 
