@@ -16,6 +16,7 @@ The architecture follows a modular pipeline design:
 
 ### High-Level Architecture
 
+```mermaid
 graph TB
     %% User Input
     User[User: Voice/Text Input]
